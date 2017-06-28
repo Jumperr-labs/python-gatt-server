@@ -59,4 +59,4 @@ You can use a smartphone as a GATT client. I used the [GATT-IP](http://www.gatt-
 ![](http://jumper-public.s3-website.eu-central-1.amazonaws.com/gatt-ip.gif)
 
 ## License
-The code in this repository is based on code taken from the [BlueZ](http://www.bluez.org/) project.
+The code in this repository is based on code taken from the [BlueZ](http://www.bluez.org/) project. It is licensed under GPL 2.0
