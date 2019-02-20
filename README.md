@@ -52,7 +52,7 @@ ln -s /usr/lib/python2.7/dist-packages/gi venv/lib/python2.7/site-packages/
 ```
 
 ## Usage
-Start the sample BLE GATT server: `python gatt_server_example.py`
+Start the sample BLE GATT server (you may need to use `sudo`): `python gatt_server_example.py`
 
 You can use a smartphone as a GATT client. I used the [GATT-IP](http://www.gatt-ip.org/) app, here it is on the [Google Play Store](https://play.google.com/store/apps/details?id=org.gatt_ip.activity&hl=en) and on the [App Store](https://itunes.apple.com/us/app/gatt-ip-bluetooth-smart-le-proxy-protocol/id940105344?mt=8)
 
