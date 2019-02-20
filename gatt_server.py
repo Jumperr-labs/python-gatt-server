@@ -612,7 +612,7 @@ def register_app_error_cb(mainloop, error):
 def gatt_server_main(mainloop, bus, adapter_name):
     adapter = adapters.find_adapter(bus, GATT_MANAGER_IFACE, adapter_name)
     if not adapter:
-        raise Exception('GattManager1 interface not found')
+        raise Exception('%s interface not found' % GATT_MANAGER_IFACE)
 
     service_manager = dbus.Interface(
             bus.get_object(BLUEZ_SERVICE_NAME, adapter),
