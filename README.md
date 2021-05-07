@@ -27,6 +27,14 @@ make
 sudo make install
 ```
 
+### Added by Rida: Fixes required in bluez code for successful compilation (in case it fails):
+'SIOCGSTAMP' undeclared (first use in this function); did you mean 'SIOCSRARP’
+resolution: https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=e62786ddceb7376cb9abf97d0b89fdc62ea7dcb3
+```
+add #include<linux/sockios.h> to tools/rctest.c
+add #include<linux/sockios.h> to tools/l2test.c
+```
+
 Enable experimental features for the bluetooth driver: 
 - `sudo nano /lib/systemd/system/bluetooth.service`
 - Add `--experimental` to `ExecStart`. The line should look like this: 
