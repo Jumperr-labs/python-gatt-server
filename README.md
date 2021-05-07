@@ -60,12 +60,12 @@ pip install -r requirements.txt
 ```
 
 ## Installing some Ubuntu and Python packages
-sudo apt-get install python3-dev
+```sudo apt-get install python3-dev
 sudo apt-get install pkg-config libcairo2-dev gcc python3-dev libgirepository1.0-dev
 sudo apt-get install python-dbus
 pip install gobject PyGObject
 pip install dbus-python
-
+```
 
 ## Usage
 Start the sample BLE GATT server: `python gatt_server_example.py`
