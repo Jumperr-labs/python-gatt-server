@@ -56,8 +56,16 @@ Install dependencies: `sudo apt-get install virtualenv python-dev libdbus-1-dev 
 virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
-ln -s /usr/lib/python2.7/dist-packages/gi venv/lib/python2.7/site-packages/
+[most probably not required!] ln -s /usr/lib/python2.7/dist-packages/gi venv/lib/python2.7/site-packages/
 ```
+
+## Installing some Ubuntu and Python packages
+sudo apt-get install python3-dev
+sudo apt-get install pkg-config libcairo2-dev gcc python3-dev libgirepository1.0-dev
+sudo apt-get install python-dbus
+pip install gobject PyGObject
+pip install dbus-python
+
 
 ## Usage
 Start the sample BLE GATT server: `python gatt_server_example.py`
