@@ -27,6 +27,14 @@ make
 sudo make install
 ```
 
+### Added by Rida: Fixes required in bluez code for successful compilation (in case it fails):
+'SIOCGSTAMP' undeclared (first use in this function); did you mean 'SIOCSRARP’
+resolution: https://gitweb.gentoo.org/repo/gentoo.git/commit/?id=e62786ddceb7376cb9abf97d0b89fdc62ea7dcb3
+```
+add #include<linux/sockios.h> to tools/rctest.c
+add #include<linux/sockios.h> to tools/l2test.c
+```
+
 Enable experimental features for the bluetooth driver: 
 - `sudo nano /lib/systemd/system/bluetooth.service`
 - Add `--experimental` to `ExecStart`. The line should look like this: 
@@ -48,7 +56,15 @@ Install dependencies: `sudo apt-get install virtualenv python-dev libdbus-1-dev 
 virtualenv venv
 source venv/bin/activate
 pip install -r requirements.txt
-ln -s /usr/lib/python2.7/dist-packages/gi venv/lib/python2.7/site-packages/
+[most probably not required!] ln -s /usr/lib/python2.7/dist-packages/gi venv/lib/python2.7/site-packages/
+```
+
+## Installing some Ubuntu and Python packages
+```sudo apt-get install python3-dev
+sudo apt-get install pkg-config libcairo2-dev gcc python3-dev libgirepository1.0-dev
+sudo apt-get install python-dbus
+pip install gobject PyGObject
+pip install dbus-python
 ```
 
 ## Usage
