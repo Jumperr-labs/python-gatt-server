@@ -18,6 +18,13 @@ from random import randint
 import exceptions
 import adapters
 
+def convert_rpy_angle_to_earbud_packet_format(roll: float, pitch: float, yaw: float):
+    import struct
+    words_list = [0, roll, pitch, yaw, 0, 0]
+    result = bytes()
+    result = result.join((struct.pack('f', word) for word in words_list))
+    return result
+
 BLUEZ_SERVICE_NAME = 'org.bluez'
 LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
 DBUS_OM_IFACE = 'org.freedesktop.DBus.ObjectManager'
@@ -456,31 +463,27 @@ class QpssTxCharacteristic(Characteristic):
                 service)
         
         self.notifying = True
-  
-        # R = -88.46, P = 1.13, Y=-103.38
-        self.rpy_packet_1 = [0x24, 0x45, 0x02, 0x00, 0x58, 0xEA, 0xB0, 0xC2, 0xEE, 0x98, 0x90, 0x3F, 0x61, 0xC0, 0xCE, 0xC2, 0x0E, 0x81, 0xB8, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+
+        self.rpy_packet_1 = convert_rpy_angle_to_earbud_packet_format(roll=-88.46, pitch=1.13, yaw=-103.38)        
         self.rpy_packet_1_dbus = [dbus.Byte(x) for x in self.rpy_packet_1]
-        
-        # R = 0, P = 1.13, Y=-103.38
-        self.rpy_packet_2 = [0x24, 0x45, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEE, 0x98, 0x90, 0x3F, 0x61, 0xC0, 0xCE, 0xC2, 0x0E, 0x81, 0xB8, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+
+        self.rpy_packet_2 = convert_rpy_angle_to_earbud_packet_format(roll=0, pitch=1.13, yaw=-103.38)
         self.rpy_packet_2_dbus = [dbus.Byte(x) for x in self.rpy_packet_2]
-        
-        # R = -88.46, P = 0, Y=-103.38
-        self.rpy_packet_3 = [0x24, 0x45, 0x02, 0x00, 0x58, 0xEA, 0xB0, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x61, 0xC0, 0xCE, 0xC2, 0x0E, 0x81, 0xB8, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+
+        self.rpy_packet_3 = convert_rpy_angle_to_earbud_packet_format(roll=-88.46, pitch=0, yaw=-103.38)
         self.rpy_packet_3_dbus = [dbus.Byte(x) for x in self.rpy_packet_3]
-      
-        # R = -88.46, P = 1.13, Y=0
-        self.rpy_packet_4 = [0x24, 0x45, 0x02, 0x00, 0x58, 0xEA, 0xB0, 0xC2, 0xEE, 0x98, 0x90, 0x3F, 0x61, 0xC0, 0xCE, 0x00, 0x00, 0x00, 0x00, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+
+        self.rpy_packet_4 = convert_rpy_angle_to_earbud_packet_format(roll=-88.46, pitch=1.13, yaw=0)
         self.rpy_packet_4_dbus = [dbus.Byte(x) for x in self.rpy_packet_4]
 
-        self.packet_index = 0 
+        self.packet_index = 0
 
         self.all_packets_hex = [self.rpy_packet_1, self.rpy_packet_2, self.rpy_packet_3, self.rpy_packet_4]
         self.all_packets = [self.rpy_packet_1_dbus, self.rpy_packet_2_dbus, self.rpy_packet_3_dbus, self.rpy_packet_4_dbus]
         
         # Settiing notifcation frequency to 1Hz
         GObject.timeout_add(1000, self.modify_rpy)    	
-    
+
     def notify_rpy_packet(self):
         if not self.notifying:
             return
