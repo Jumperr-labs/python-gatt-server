@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from PyQt5 import QtCore  # core Qt functionality
 import sys  # we'll need this later to run our Qt application
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSlider, QApplication, QLabel, QHBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QSlider, QApplication, QLabel, QHBoxLayout, QGridLayout, QPushButton
 
 from gl_widget import GLWidget
 import dbus
@@ -79,11 +79,11 @@ class MainWindow(QMainWindow):
         x_widget.setLayout(x_layout)
         self.x_label = QLabel("Pitch 0")
         x_layout.addWidget(self.x_label)
-        slider_x = QSlider(QtCore.Qt.Horizontal)
-        x_layout.addWidget(slider_x)
-        slider_x.valueChanged.connect(self.slider_x_valueChanged_handler)
-        slider_x.setMinimum(-180)
-        slider_x.setMaximum(180)
+        self.slider_x = QSlider(QtCore.Qt.Horizontal)
+        x_layout.addWidget(self.slider_x)
+        self.slider_x.valueChanged.connect(self.slider_x_valueChanged_handler)
+        self.slider_x.setMinimum(-180)
+        self.slider_x.setMaximum(180)
 
         y_widget = QWidget()
         y_layout = QHBoxLayout()
@@ -91,11 +91,11 @@ class MainWindow(QMainWindow):
         y_widget.setLayout(y_layout)
         self.y_label = QLabel("Yaw 0")
         y_layout.addWidget(self.y_label)
-        slider_y = QSlider(QtCore.Qt.Horizontal)
-        y_layout.addWidget(slider_y)
-        slider_y.valueChanged.connect(self.slider_y_valueChanged_handler)
-        slider_y.setMinimum(-180)
-        slider_y.setMaximum(180)
+        self.slider_y = QSlider(QtCore.Qt.Horizontal)
+        y_layout.addWidget(self.slider_y)
+        self.slider_y.valueChanged.connect(self.slider_y_valueChanged_handler)
+        self.slider_y.setMinimum(-180)
+        self.slider_y.setMaximum(180)
 
         z_widget = QWidget()
         z_layout = QHBoxLayout()
@@ -103,16 +103,20 @@ class MainWindow(QMainWindow):
         z_widget.setLayout(z_layout)
         self.z_label = QLabel("Roll 0")
         z_layout.addWidget(self.z_label)
-        slider_z = QSlider(QtCore.Qt.Horizontal)
-        z_layout.addWidget(slider_z)
-        slider_z.valueChanged.connect(self.slider_z_valueChanged_handler)
-        slider_z.setMinimum(-180)
-        slider_z.setMaximum(180)
+        self.slider_z = QSlider(QtCore.Qt.Horizontal)
+        z_layout.addWidget(self.slider_z)
+        self.slider_z.valueChanged.connect(self.slider_z_valueChanged_handler)
+        self.slider_z.setMinimum(-180)
+        self.slider_z.setMaximum(180)
+
+        self.q_button_reset_view = QPushButton("Reset to (0,0,0)")
+        self.q_button_reset_view.clicked.connect(self.q_button_reset_view_handler)
 
         gui_layout.addWidget(self.glWidget, 0, 0, 10, 1)
         gui_layout.addWidget(x_widget, 11, 0, 1, 1)
         gui_layout.addWidget(y_widget, 12, 0, 1, 1)
         gui_layout.addWidget(z_widget, 13, 0, 1, 1)
+        gui_layout.addWidget(self.q_button_reset_view, 14, 0, 1, 1)
 
     def slider_x_valueChanged_handler(self, val):
         self.glWidget.setRotX(val)
@@ -128,6 +132,11 @@ class MainWindow(QMainWindow):
         self.glWidget.setRotZ(val)
         self.z_label.setText(f"Roll {val}")
         self.update_simulator()
+
+    def q_button_reset_view_handler(self):
+        self.slider_x.setValue(0)
+        self.slider_y.setValue(0)
+        self.slider_z.setValue(0)
 
     def init_and_run_simulator(self):
         self.simulator = Simulator()
