@@ -44,7 +44,10 @@ class Simulator(threading.Thread):
 
     def update_rpy(self, roll: float, pitch: float, yaw: float):
         self.gatt_server.update_rpy(roll=roll, pitch=pitch, yaw=yaw)
-    
+
+    def update_battery(self, battery_level: int):
+        self.gatt_server.update_battery(battery_level=battery_level)
+
     def destroy(self):
         self.__mainloop.quit()
 
@@ -108,14 +111,28 @@ class MainWindow(QMainWindow):
         self.slider_z.setMinimum(-180)
         self.slider_z.setMaximum(180)
 
-        self.q_button_reset_view = QPushButton("Reset to (0,0,0)")
+        battery_widget = QWidget()
+        battery_layout = QHBoxLayout()
+        battery_layout.setContentsMargins(0, 0, 0, 0)
+        battery_widget.setLayout(battery_layout)
+        self.battery_label = QLabel("Battery Level 0")
+        battery_layout.addWidget(self.battery_label)
+        self.slider_battery = QSlider(QtCore.Qt.Horizontal)
+        battery_layout.addWidget(self.slider_battery)
+        self.slider_battery.valueChanged.connect(self.battery_valueChanged_handler)
+        self.slider_battery.setMinimum(0)
+        self.slider_battery.setValue(100)
+        self.slider_battery.setMaximum(100)
+
+        self.q_button_reset_view = QPushButton("Reset to defaults")
         self.q_button_reset_view.clicked.connect(self.q_button_reset_view_handler)
 
         gui_layout.addWidget(self.glWidget, 0, 0, 10, 1)
         gui_layout.addWidget(z_widget, 11, 0, 1, 1)
         gui_layout.addWidget(x_widget, 12, 0, 1, 1)
         gui_layout.addWidget(y_widget, 13, 0, 1, 1)
-        gui_layout.addWidget(self.q_button_reset_view, 14, 0, 1, 1)
+        gui_layout.addWidget(battery_widget, 14, 0, 1, 1)
+        gui_layout.addWidget(self.q_button_reset_view, 15, 0, 1, 1)
 
     def slider_x_valueChanged_handler(self, val):
         self.glWidget.setRotX(val)
@@ -131,11 +148,16 @@ class MainWindow(QMainWindow):
         self.glWidget.setRotZ(val)
         self.z_label.setText(f"Roll {val}")
         self.update_simulator()
+    
+    def battery_valueChanged_handler(self, val):
+        self.battery_label.setText(f"Battery Level {val}")
+        self.simulator.update_battery(val)
 
     def q_button_reset_view_handler(self):
         self.slider_x.setValue(0)
         self.slider_y.setValue(0)
         self.slider_z.setValue(0)
+        self.slider_battery.setValue(100)
 
     def init_and_run_simulator(self):
         self.simulator = Simulator()

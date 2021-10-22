@@ -49,7 +49,9 @@ class Application(dbus.service.Object):
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
         self.add_service(HeartRateService(bus, 0))
-        self.add_service(BatteryService(bus, 1))
+
+        self.battery_service = BatteryService(bus, 1)
+        self.add_service(self.battery_service)
         self.add_service(TestService(bus, 2))
 
         self.qpps_service = QPPS_Service(bus, 3)
@@ -63,6 +65,9 @@ class Application(dbus.service.Object):
 
     def update_rpy(self, roll: float, pitch: float, yaw: float):
         self.qpps_service.update_rpy(roll, pitch, yaw)
+    
+    def update_battery(self, battery_level: int):
+        self.battery_service.update_battery(battery_level)
 
     @dbus.service.method(DBUS_OM_IFACE, out_signature='a{oa{sa{sv}}}')
     def GetManagedObjects(self):
@@ -377,8 +382,12 @@ class BatteryService(Service):
 
     def __init__(self, bus, index):
         Service.__init__(self, bus, index, self.BATTERY_UUID, True)
-        self.add_characteristic(BatteryLevelCharacteristic(bus, 0, self))
+        self.battery_level_characteristic = BatteryLevelCharacteristic(bus, 0, self)
+        self.add_characteristic(self.battery_level_characteristic)
 
+    def update_battery(self, battery_level: int):
+        print(f"Battery level {battery_level}")
+        self.battery_level_characteristic.update_battery(battery_level)
 
 class BatteryLevelCharacteristic(Characteristic):
     """
@@ -394,15 +403,16 @@ class BatteryLevelCharacteristic(Characteristic):
                 self.BATTERY_LVL_UUID,
                 ['read', 'notify'],
                 service)
-        
-        # Modifications:
-        # self.notifying = False
+
         self.notifying = True
-        
+
         self.battery_lvl = 100
-        
-        # Modifications:
-        GObject.timeout_add(5000, self.drain_battery)
+
+        # Send battery level notifications every 1 second
+        GObject.timeout_add(1000, self.drain_battery)
+
+    def update_battery(self, battery_level: int):
+        self.battery_lvl = battery_level
 
     def notify_battery_level(self):
         if not self.notifying:
@@ -412,11 +422,6 @@ class BatteryLevelCharacteristic(Characteristic):
                 {'Value': [dbus.Byte(self.battery_lvl)] }, [])
 
     def drain_battery(self):
-        if self.battery_lvl > 0:
-            self.battery_lvl -= 1
-            if self.battery_lvl <= 50:
-                self.battery_lvl = 100
-        print('Battery level: ' + repr(self.battery_lvl))
         self.notify_battery_level()
         return True
 
@@ -444,7 +449,6 @@ class BatteryLevelCharacteristic(Characteristic):
 class QPPS_Service(Service):
     """
     # TODO: docs
-
     """
     QPPS_UUID = '0000FEE9-0000-1000-8000-00805F9B34FB'
 
@@ -720,3 +724,6 @@ class GattServerMain:
 
     def update_rpy(self, roll: float, pitch: float, yaw: float):
         self.app.update_rpy(roll, pitch, yaw)
+
+    def update_battery(self, battery_level: int):
+        self.app.update_battery(battery_level)
