@@ -94,3 +94,12 @@ class GLWidget(QtOpenGL.QGLWidget):
 
     def setRotZ(self, val):
         self.rotZ = val
+    
+    def getRotX(self):
+        return self.rotX
+
+    def getRotY(self):
+        return self.rotY
+
+    def getRotZ(self):
+        return self.rotZ

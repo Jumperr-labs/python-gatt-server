@@ -464,13 +464,8 @@ class QpssTxCharacteristic(Characteristic):
     QPSS_TX_UUID = 'D44BC439-ABFD-45A2-B575-925416129601'
 
     def update_rpy(self, roll: float, pitch: float, yaw: float):
-        packet_hex = convert_rpy_angle_to_earbud_packet_format(roll=roll, pitch=pitch, yaw=yaw)
-        packet_dbus = [dbus.Byte(x) for x in packet_hex]
-
-        self.all_packets_hex.append(packet_hex)
-        self.all_packets.append(packet_dbus)
-
-        self.total_number_of_packets += 1
+        self.__packet_hex = convert_rpy_angle_to_earbud_packet_format(roll=roll, pitch=pitch, yaw=yaw)
+        self.__packet_dbus = [dbus.Byte(x) for x in self.__packet_hex]
 
     def __init__(self, bus, index, service):
         Characteristic.__init__(
@@ -480,10 +475,9 @@ class QpssTxCharacteristic(Characteristic):
                 service)
 
         self.notifying = True
-        self.all_packets_hex = []
-        self.all_packets = []
-        self.total_number_of_packets = 0
-        self.packet_index = 0
+  
+        self.__packet_hex = convert_rpy_angle_to_earbud_packet_format(roll=0, pitch=0, yaw=1)
+        self.__packet_dbus = [dbus.Byte(x) for x in self.__packet_hex]
 
         # Settiing notifcation frequency to 1Hz
         GObject.timeout_add(1000, self.modify_rpy)
@@ -493,29 +487,16 @@ class QpssTxCharacteristic(Characteristic):
             return
         self.PropertiesChanged(
                 GATT_CHRC_IFACE,
-                {'Value': self.current_packet_in_dbus}, [])
-    
-    @property
-    def current_packet_in_dbus(self):
-    	return self.all_packets[self.packet_index]
-   
-    @property
-    def current_packet_in_hex(self):
-    	return self.all_packets_hex[self.packet_index]
-    
-    def modify_rpy(self):  
-        print('RPY: ' + repr(self.current_packet_in_hex))
-        self.notify_rpy_packet()
-      
-        self.packet_index += 1
-        if self.packet_index == self.total_number_of_packets:
-            self.packet_index = 0
+                {'Value': self.__packet_dbus}, [])
 
+    def modify_rpy(self):  
+        print('RPY: ' + repr(self.__packet_hex))
+        self.notify_rpy_packet()
         return True
 
     def ReadValue(self, options):
-        print('RPY packet read: ' + repr(self.current_packet_in_hex))
-        return [self.current_packet_in_dbus]
+        print('RPY packet read: ' + repr(self.__packet_hex))
+        return [self.__packet_dbus]
 
     def StartNotify(self):
         if self.notifying:
