@@ -51,13 +51,18 @@ class Application(dbus.service.Object):
         self.add_service(HeartRateService(bus, 0))
         self.add_service(BatteryService(bus, 1))
         self.add_service(TestService(bus, 2))
-        self.add_service(QPPS_Service(bus, 3))
+
+        self.qpps_service = QPPS_Service(bus, 3)
+        self.add_service(self.qpps_service)
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
 
     def add_service(self, service):
         self.services.append(service)
+
+    def update_rpy(self, roll: float, pitch: float, yaw: float):
+        self.qpps_service.update_rpy(roll, pitch, yaw)
 
     @dbus.service.method(DBUS_OM_IFACE, out_signature='a{oa{sa{sv}}}')
     def GetManagedObjects(self):
@@ -445,8 +450,11 @@ class QPPS_Service(Service):
 
     def __init__(self, bus, index):
         Service.__init__(self, bus, index, self.QPPS_UUID, True)
-        self.add_characteristic(QpssTxCharacteristic(bus, 0, self))
+        self.tx_characteristic = QpssTxCharacteristic(bus, 0, self)
+        self.add_characteristic(self.tx_characteristic)
 
+    def update_rpy(self, roll: float, pitch: float, yaw: float):
+        self.tx_characteristic.update_rpy(roll, pitch, yaw)
 
 class QpssTxCharacteristic(Characteristic):
     """
@@ -455,34 +463,30 @@ class QpssTxCharacteristic(Characteristic):
     """
     QPSS_TX_UUID = 'D44BC439-ABFD-45A2-B575-925416129601'
 
+    def update_rpy(self, roll: float, pitch: float, yaw: float):
+        packet_hex = convert_rpy_angle_to_earbud_packet_format(roll=roll, pitch=pitch, yaw=yaw)
+        packet_dbus = [dbus.Byte(x) for x in packet_hex]
+
+        self.all_packets_hex.append(packet_hex)
+        self.all_packets.append(packet_dbus)
+
+        self.total_number_of_packets += 1
+
     def __init__(self, bus, index, service):
         Characteristic.__init__(
                 self, bus, index,
                 self.QPSS_TX_UUID,
                 ['read', 'notify'],
                 service)
-        
+
         self.notifying = True
-
-        self.rpy_packet_1 = convert_rpy_angle_to_earbud_packet_format(roll=-88.46, pitch=1.13, yaw=-103.38)        
-        self.rpy_packet_1_dbus = [dbus.Byte(x) for x in self.rpy_packet_1]
-
-        self.rpy_packet_2 = convert_rpy_angle_to_earbud_packet_format(roll=0, pitch=1.13, yaw=-103.38)
-        self.rpy_packet_2_dbus = [dbus.Byte(x) for x in self.rpy_packet_2]
-
-        self.rpy_packet_3 = convert_rpy_angle_to_earbud_packet_format(roll=-88.46, pitch=0, yaw=-103.38)
-        self.rpy_packet_3_dbus = [dbus.Byte(x) for x in self.rpy_packet_3]
-
-        self.rpy_packet_4 = convert_rpy_angle_to_earbud_packet_format(roll=-88.46, pitch=1.13, yaw=0)
-        self.rpy_packet_4_dbus = [dbus.Byte(x) for x in self.rpy_packet_4]
-
+        self.all_packets_hex = []
+        self.all_packets = []
+        self.total_number_of_packets = 0
         self.packet_index = 0
 
-        self.all_packets_hex = [self.rpy_packet_1, self.rpy_packet_2, self.rpy_packet_3, self.rpy_packet_4]
-        self.all_packets = [self.rpy_packet_1_dbus, self.rpy_packet_2_dbus, self.rpy_packet_3_dbus, self.rpy_packet_4_dbus]
-        
         # Settiing notifcation frequency to 1Hz
-        GObject.timeout_add(1000, self.modify_rpy)    	
+        GObject.timeout_add(1000, self.modify_rpy)
 
     def notify_rpy_packet(self):
         if not self.notifying:
@@ -504,7 +508,7 @@ class QpssTxCharacteristic(Characteristic):
         self.notify_rpy_packet()
       
         self.packet_index += 1
-        if self.packet_index == 4:
+        if self.packet_index == self.total_number_of_packets:
             self.packet_index = 0
 
         return True
@@ -716,21 +720,23 @@ def register_app_error_cb(mainloop, error):
     print('Failed to register application: ' + str(error))
     mainloop.quit()
 
+class GattServerMain:
+    def gatt_server_main(self, mainloop, bus, adapter_name):
+        adapter = adapters.find_adapter(bus, GATT_MANAGER_IFACE, adapter_name)
+        if not adapter:
+            raise Exception('GattManager1 interface not found')
 
-def gatt_server_main(mainloop, bus, adapter_name):
-    adapter = adapters.find_adapter(bus, GATT_MANAGER_IFACE, adapter_name)
-    if not adapter:
-        raise Exception('GattManager1 interface not found')
+        service_manager = dbus.Interface(
+                bus.get_object(BLUEZ_SERVICE_NAME, adapter),
+                GATT_MANAGER_IFACE)
 
-    service_manager = dbus.Interface(
-            bus.get_object(BLUEZ_SERVICE_NAME, adapter),
-            GATT_MANAGER_IFACE)
+        self.app = Application(bus)
 
-    app = Application(bus)
+        print('Registering GATT application...')
 
-    print('Registering GATT application...')
+        service_manager.RegisterApplication(self.app.get_path(), {},
+                                        reply_handler=register_app_cb,
+                                        error_handler=functools.partial(register_app_error_cb, mainloop))
 
-    service_manager.RegisterApplication(app.get_path(), {},
-                                    reply_handler=register_app_cb,
-                                    error_handler=functools.partial(register_app_error_cb, mainloop))
-
+    def update_rpy(self, roll: float, pitch: float, yaw: float):
+        self.app.update_rpy(roll, pitch, yaw)
