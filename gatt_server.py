@@ -44,6 +44,7 @@ class Application(dbus.service.Object):
         self.add_service(HeartRateService(bus, 0))
         self.add_service(BatteryService(bus, 1))
         self.add_service(TestService(bus, 2))
+        self.add_service(QPPS_Service(bus, 3))
 
     def get_path(self):
         return dbus.ObjectPath(self.path)
@@ -418,6 +419,104 @@ class BatteryLevelCharacteristic(Characteristic):
 
         self.notifying = True
         self.notify_battery_level()
+
+    def StopNotify(self):
+        if not self.notifying:
+            print('Not notifying, nothing to do')
+            return
+
+        self.notifying = False
+
+
+
+class QPPS_Service(Service):
+    """
+    # TODO: docs
+
+    """
+    QPPS_UUID = '0000FEE9-0000-1000-8000-00805F9B34FB'
+
+    def __init__(self, bus, index):
+        Service.__init__(self, bus, index, self.QPPS_UUID, True)
+        self.add_characteristic(QpssTxCharacteristic(bus, 0, self))
+
+
+class QpssTxCharacteristic(Characteristic):
+    """
+    # TODO: later
+
+    """
+    QPSS_TX_UUID = 'D44BC439-ABFD-45A2-B575-925416129601'
+
+    def __init__(self, bus, index, service):
+        Characteristic.__init__(
+                self, bus, index,
+                self.QPSS_TX_UUID,
+                ['read', 'notify'],
+                service)
+        
+        self.notifying = True
+  
+        # R = -88.46, P = 1.13, Y=-103.38
+        self.rpy_packet_1 = [0x24, 0x45, 0x02, 0x00, 0x58, 0xEA, 0xB0, 0xC2, 0xEE, 0x98, 0x90, 0x3F, 0x61, 0xC0, 0xCE, 0xC2, 0x0E, 0x81, 0xB8, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+        self.rpy_packet_1_dbus = [dbus.Byte(x) for x in self.rpy_packet_1]
+        
+        # R = 0, P = 1.13, Y=-103.38
+        self.rpy_packet_2 = [0x24, 0x45, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xEE, 0x98, 0x90, 0x3F, 0x61, 0xC0, 0xCE, 0xC2, 0x0E, 0x81, 0xB8, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+        self.rpy_packet_2_dbus = [dbus.Byte(x) for x in self.rpy_packet_2]
+        
+        # R = -88.46, P = 0, Y=-103.38
+        self.rpy_packet_3 = [0x24, 0x45, 0x02, 0x00, 0x58, 0xEA, 0xB0, 0xC2, 0x00, 0x00, 0x00, 0x00, 0x61, 0xC0, 0xCE, 0xC2, 0x0E, 0x81, 0xB8, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+        self.rpy_packet_3_dbus = [dbus.Byte(x) for x in self.rpy_packet_3]
+      
+        # R = -88.46, P = 1.13, Y=0
+        self.rpy_packet_4 = [0x24, 0x45, 0x02, 0x00, 0x58, 0xEA, 0xB0, 0xC2, 0xEE, 0x98, 0x90, 0x3F, 0x61, 0xC0, 0xCE, 0x00, 0x00, 0x00, 0x00, 0x47, 0xDC, 0x0A, 0xCA, 0x0A]
+        self.rpy_packet_4_dbus = [dbus.Byte(x) for x in self.rpy_packet_4]
+
+        self.packet_index = 0 
+
+        self.all_packets_hex = [self.rpy_packet_1, self.rpy_packet_2, self.rpy_packet_3, self.rpy_packet_4]
+        self.all_packets = [self.rpy_packet_1_dbus, self.rpy_packet_2_dbus, self.rpy_packet_3_dbus, self.rpy_packet_4_dbus]
+        
+        # Settiing notifcation frequency to 1Hz
+        GObject.timeout_add(1000, self.modify_rpy)    	
+    
+    def notify_rpy_packet(self):
+        if not self.notifying:
+            return
+        self.PropertiesChanged(
+                GATT_CHRC_IFACE,
+                {'Value': self.current_packet_in_dbus}, [])
+    
+    @property
+    def current_packet_in_dbus(self):
+    	return self.all_packets[self.packet_index]
+   
+    @property
+    def current_packet_in_hex(self):
+    	return self.all_packets_hex[self.packet_index]
+    
+    def modify_rpy(self):  
+        print('RPY: ' + repr(self.current_packet_in_hex))
+        self.notify_rpy_packet()
+      
+        self.packet_index += 1
+        if self.packet_index == 4:
+            self.packet_index = 0
+
+        return True
+
+    def ReadValue(self, options):
+        print('RPY packet read: ' + repr(self.current_packet_in_hex))
+        return [self.current_packet_in_dbus]
+
+    def StartNotify(self):
+        if self.notifying:
+            print('Already notifying, nothing to do')
+            return
+
+        self.notifying = True
+        self.notify_rpy_packet()
 
     def StopNotify(self):
         if not self.notifying:
