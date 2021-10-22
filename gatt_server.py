@@ -479,8 +479,8 @@ class QpssTxCharacteristic(Characteristic):
         self.__packet_hex = convert_rpy_angle_to_earbud_packet_format(roll=0, pitch=0, yaw=1)
         self.__packet_dbus = [dbus.Byte(x) for x in self.__packet_hex]
 
-        # Settiing notifcation frequency to 1Hz
-        GObject.timeout_add(1000, self.modify_rpy)
+        # Settiing notifcation frequency to 10Hz
+        GObject.timeout_add(100, self.refresh_rpy_packet)
 
     def notify_rpy_packet(self):
         if not self.notifying:
@@ -489,7 +489,7 @@ class QpssTxCharacteristic(Characteristic):
                 GATT_CHRC_IFACE,
                 {'Value': self.__packet_dbus}, [])
 
-    def modify_rpy(self):
+    def refresh_rpy_packet(self):
         self.notify_rpy_packet()
         return True
 
