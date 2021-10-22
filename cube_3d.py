@@ -112,9 +112,9 @@ class MainWindow(QMainWindow):
         self.q_button_reset_view.clicked.connect(self.q_button_reset_view_handler)
 
         gui_layout.addWidget(self.glWidget, 0, 0, 10, 1)
-        gui_layout.addWidget(x_widget, 11, 0, 1, 1)
-        gui_layout.addWidget(y_widget, 12, 0, 1, 1)
-        gui_layout.addWidget(z_widget, 13, 0, 1, 1)
+        gui_layout.addWidget(z_widget, 11, 0, 1, 1)
+        gui_layout.addWidget(x_widget, 12, 0, 1, 1)
+        gui_layout.addWidget(y_widget, 13, 0, 1, 1)
         gui_layout.addWidget(self.q_button_reset_view, 14, 0, 1, 1)
 
     def slider_x_valueChanged_handler(self, val):
@@ -145,6 +145,11 @@ class MainWindow(QMainWindow):
         self.simulator.update_rpy(self.glWidget.getRotZ(), self.glWidget.getRotX(), self.glWidget.getRotY())
 
     def cleanup(self):
+        self.simulator.destroy()
+    
+    def closeEvent(self, event):
+        print("closeEvent invoked")
+        event.accept()
         self.simulator.destroy()
 
 app = QApplication(sys.argv)
