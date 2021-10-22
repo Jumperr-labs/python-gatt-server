@@ -459,11 +459,11 @@ class QPPS_Service(Service):
 class QpssTxCharacteristic(Characteristic):
     """
     # TODO: later
-
     """
     QPSS_TX_UUID = 'D44BC439-ABFD-45A2-B575-925416129601'
 
     def update_rpy(self, roll: float, pitch: float, yaw: float):
+        print(f"Update  Roll={roll} Pitch={pitch} Yaw={yaw}")
         self.__packet_hex = convert_rpy_angle_to_earbud_packet_format(roll=roll, pitch=pitch, yaw=yaw)
         self.__packet_dbus = [dbus.Byte(x) for x in self.__packet_hex]
 
@@ -489,8 +489,7 @@ class QpssTxCharacteristic(Characteristic):
                 GATT_CHRC_IFACE,
                 {'Value': self.__packet_dbus}, [])
 
-    def modify_rpy(self):  
-        print('RPY: ' + repr(self.__packet_hex))
+    def modify_rpy(self):
         self.notify_rpy_packet()
         return True
 

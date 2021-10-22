@@ -43,7 +43,6 @@ class Simulator(threading.Thread):
         print ("Exiting Simulator")
 
     def update_rpy(self, roll: float, pitch: float, yaw: float):
-        print(f"update_rpy {roll} {pitch} {yaw}")
         self.gatt_server.update_rpy(roll=roll, pitch=pitch, yaw=yaw)
     
     def destroy(self):
