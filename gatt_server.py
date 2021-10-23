@@ -48,13 +48,13 @@ class Application(dbus.service.Object):
         self.path = '/'
         self.services = []
         dbus.service.Object.__init__(self, bus, self.path)
-        self.add_service(HeartRateService(bus, 0))
 
-        self.battery_service = BatteryService(bus, 1)
+        # Adding battery service
+        self.battery_service = BatteryService(bus, 0)
         self.add_service(self.battery_service)
-        self.add_service(TestService(bus, 2))
 
-        self.qpps_service = QPPS_Service(bus, 3)
+        # Adding QPPS service
+        self.qpps_service = QPPS_Service(bus, 1)
         self.add_service(self.qpps_service)
 
     def get_path(self):
